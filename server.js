@@ -1,37 +1,29 @@
 const http = require('http');
-const url = require('url');
 
-function gcd(a, b) {
-    while (b !== 0) {
-        let temp = b;
-        b = a % b;
-        a = temp;
-    }
-    return a;
-}
+const gcd = (a, b) => b === 0n ? a : gcd(b, a % b);
+const lcm = (a, b) => (a === 0n || b === 0n) ? 0n : (a * b) / gcd(a, b);
 
-function lcm(a, b) {
-    return (a * b) / gcd(a, b);
-}
+const parseNum = (str) => {
+    if (!str || !/^\s*\+?\d+\s*$/.test(str)) return null; // Только цифры и необязательный плюс
+    const n = BigInt(str);
+    return n > 0n ? n : null;
+};
 
-const server = http.createServer((req, res) => {
-    
-    const parsed = url.parse(req.url, true);
+http.createServer((req, res) => {
+    const send = (status, text) => {
+        res.writeHead(status, { 'Content-Type': 'text/plain; charset=utf-8' });
+        res.end(text);
+    };
 
-    const x = Number(parsed.query.x);
-    const y = Number(parsed.query.y);
+    if (req.method !== 'GET') return send(405, 'NaN');
 
-    if (!x || !y || isNaN(x) || isNaN(y)) {
-        res.end("NaN");
-        return;
-    }
+    const parsedUrl = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
+    if (!parsedUrl.pathname.endsWith('gulnaz_pakhriyeva_06_mail_ru')) return send(404, 'NaN');
 
-    const result = lcm(x, y);
-    res.end(String(result));
-});
+    const x = parseNum(parsedUrl.searchParams.get('x'));
+    const y = parseNum(parsedUrl.searchParams.get('y'));
 
-const PORT = process.env.PORT || 3000;
+    if (x === null || y === null) return send(200, 'NaN');
 
-server.listen(PORT, () => {
-    console.log("servak rabotaet");
-});
+    send(200, String(lcm(x, y)));
+}).listen(process.env.PORT || 3000, () => console.log("Servak gotov"));
